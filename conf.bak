@@ -1,0 +1,138 @@
+{ config, pkgs, ... }:
+
+let
+  # Fetch home-manager release tarball from GitHub
+  home-manager = import (builtins.fetchTarball {
+    url = "https://github.com/nix-community/home-manager/archive/release-25.05.tar.gz";
+  }) { inherit pkgs; };
+in
+{
+  # Import the home-manager module here
+  imports =
+    [
+      ./hardware-configuration.nix
+      ./sunshine.nix
+      home-manager
+    ];
+
+  # Bootloader settings
+  boot.loader.systemd-boot.enable = true;
+  boot.loader.efi.canTouchEfiVariables = true;
+
+  # Use the latest kernel
+  boot.kernelPackages = pkgs.linuxPackages_latest;
+
+  # Networking settings
+  networking.hostName = "nixos";
+  networking.networkmanager.enable = true;
+
+  # Time zone and internationalization
+  time.timeZone = "America/New_York";
+  i18n.defaultLocale = "en_US.UTF-8";
+  i18n.extraLocaleSettings = {
+    LC_ADDRESS = "en_US.UTF-8";
+    LC_IDENTIFICATION = "en_US.UTF-8";
+    LC_MEASUREMENT = "en_US.UTF-8";
+    LC_MONETARY = "en_US.UTF-8";
+    LC_NAME = "en_US.UTF-8";
+    LC_NUMERIC = "en_US.UTF-8";
+    LC_PAPER = "en_US.UTF-8";
+    LC_TELEPHONE = "en_US.UTF-8";
+    LC_TIME = "en_US.UTF-8";
+  };
+
+  # Enable the X11 windowing system
+  services.xserver.enable = true;
+
+  # Enable SDDM as display manager
+  services.displayManager.sddm.enable = true;
+  services.displayManager.sddm.wayland.enable = true;
+
+  # Configure keymap in X11
+  services.xserver.xkb = {
+    layout = "us";
+    variant = "";
+  };
+
+  # Enable Hyprland (Wayland compositor)
+  programs.hyprland = {
+    enable = true;
+    withUWSM = true;
+    xwayland.enable = true;
+  };
+
+  # Enable printing support with CUPS
+  services.printing.enable = true;
+
+  # Enable PipeWire for audio
+  services.pulseaudio.enable = false;
+  security.rtkit.enable = true;
+  services.pipewire = {
+    enable = true;
+    alsa.enable = true;
+    alsa.support32Bit = true;
+    pulse.enable = true;
+  };
+
+  # Define a user account (aside6)
+  users.users.aside6 = {
+    isNormalUser = true;
+    description = "aside6";
+    extraGroups = [ "networkmanager" "wheel" ];
+    packages = with pkgs; [
+      # Example: you can add more user-specific packages here
+    ];
+  };
+
+  # Enable automatic login for the user
+  services.displayManager.autoLogin.enable = true;
+  services.displayManager.autoLogin.user = "aside6";
+
+  # Disable systemd getty services for autologin
+  systemd.services."getty@tty1".enable = false;
+  systemd.services."autovt@tty1".enable = false;
+
+  # Install Firefox and other applications
+  programs.firefox.enable = true;
+
+  # Allow unfree packages
+  nixpkgs.config.allowUnfree = true;
+
+  # Install system packages
+  environment.systemPackages = with pkgs; [
+    git
+    kitty
+    vscode
+    micro
+    nautilus
+    ranger
+    yazi
+    pavucontrol
+    helvum
+    thunderbird
+    vulkan-tools
+    vulkan-loader
+    lutris
+    mpv
+    neovim
+    rofi-wayland
+    discord
+    slurp
+    grim
+    wl-clipboard
+    feishin
+    cava
+  ];
+
+  # Enable home-manager to manage user environments
+  programs.home-manager.enable = true;
+
+  # Configure home-manager for the 'aside6' user
+  home-manager.users.aside6 = home-manager.lib.homeManagerConfiguration {
+    pkgs = pkgs;  # Pass in the package set
+    modules = [ ./home.nix ];  # User-specific configuration (dotfiles, etc.)
+  };
+
+  # Set system state version
+  system.stateVersion = "25.05";  # Use the appropriate NixOS version
+}
