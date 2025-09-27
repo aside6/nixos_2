@@ -10,7 +10,6 @@ in
       ./hardware-configuration.nix
       ./sunshine.nix
       (import "${home-manager}/nixos")
-  #    home-manager.nixosModules.home-manager
     ];
 
 #  nix.settings.experimental.features = [ "nix-command" ];
